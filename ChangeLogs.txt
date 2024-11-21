@@ -1,0 +1,8 @@
+v0.1
+video.py
+-Fixed the framerate issue (kinda) when you set it to a large enough value, it works correctly :3 The problem was a rounding error at lower framerates. I wil fix it properly later. 
+-Video now ends after the playback is complete
+-(Re)implemented default play settings -_-
+other
+-Moved the commented code to Legacy-backup.py
+-Step 4 complete!
