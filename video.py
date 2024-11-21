@@ -383,7 +383,7 @@ def main(args):
     # Determine video dimensions if provided
     width = 960
     height = 540
-    fps = 30
+    fps = 70
 
     if len(args) > 2:
         width = int(args[2])
