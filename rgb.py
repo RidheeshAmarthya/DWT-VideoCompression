@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image, ImageTk
 import tkinter as tk
 
-#RIdheesh
+#RIdheesh PP
 
 class ImageDisplay:
     def __init__(self, width=512, height=512):
