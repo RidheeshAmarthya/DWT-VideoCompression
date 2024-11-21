@@ -1,6 +1,6 @@
 v0.1
 video.py
--Fixed the framerate issue (kinda) when you set it to a large enough value, it works correctly :3 The problem was a rounding error at lower framerates. I wil fix it properly later. 
+-The framerate is working correctly when using default settings, it runs at 30. 
 -Video now ends after the playback is complete
 -(Re)implemented default play settings -_-
 other

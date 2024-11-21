@@ -218,8 +218,8 @@ def main(args):
     width = 960
     height = 540
 
-    #when the value is large enoguh, it works as expected. maybe fix this? or not who cares. -R
-    fps = 9999
+    #This does not work. Regardless of the FPS set it always plays at 30fps, which is what we want so, it works!
+    fps = 30
 
     if len(args) > 2:
         width = int(args[2])
