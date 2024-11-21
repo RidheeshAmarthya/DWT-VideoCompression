@@ -144,13 +144,10 @@ class VideoDisplay:
 
 def main(args):
     if len(args) < 1:
-        print("Please provide a video path")
-        return
-
-    # Check if file exists
-    if not os.path.exists(args[0]):
-        print(f"File {args[0]} does not exist")
-        return
+        print("No input provided using default settings")
+        input = "WalkingStaticBackground.rgb"
+    else:
+        input = args[0]
 
     # Determine video dimensions if provided
     width = 960
@@ -165,7 +162,7 @@ def main(args):
         fps = int(args[3])
 
     video_display = VideoDisplay(width, height, fps)
-    video_display.play_video(args[0])
+    video_display.play_video(input)
 
 if __name__ == "__main__":
     import sys
