@@ -73,17 +73,9 @@ class ImageDisplay:
         self.root.mainloop()
 
 def main(args):
-    if len(args) < 1:
-        print("Please provide an image path")
-        return
-
-    # Check if file exists
-    if not os.path.exists(args[0]):
-        print(f"File {args[0]} does not exist")
-        return
-
+    input = "roses_image_512x512.rgb"
     image_display = ImageDisplay()
-    image_display.show_image(args[0])
+    image_display.show_image(input)
 
 if __name__ == "__main__":
     import sys
