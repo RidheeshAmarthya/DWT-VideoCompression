@@ -109,6 +109,9 @@ class VideoDisplay:
         self.audio_thread = threading.Thread(target=self.play_audio, args=(audio_path,))
         self.audio_thread.start()
         self.current_frame = 0
+
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         self.update_frame()
 
         self.root.mainloop()
@@ -133,11 +136,21 @@ class VideoDisplay:
         else:
             print("Video finished.")
             self.is_playing = False
+            self.stop_playback()
+
+    def stop_playback(self):
+        self.is_playing = False
+
+        if self.audio_stream:
             self.audio_stream.stop_stream()
             self.audio_stream.close()
+        if self.audio_file:
             self.audio_file.close()
-            self.root.destroy()
-            return
+        self.root.quit()
+
+    def on_closing(self):
+        self.stop_playback()
+        self.root.destroy()
 
     def toggle_play_pause(self, audio_path):
         with self.audio_playback_lock:
