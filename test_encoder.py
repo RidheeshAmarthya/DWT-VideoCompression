@@ -337,7 +337,7 @@ class VideoEncoder:
         compressed_frames = []
 
         for i in range(len(frames)):
-            if i == 0 or i % self.i_frame_interval == 0:
+            if i == 0 :#or i % self.i_frame_interval == 0:
                 # I-frame: all blocks treated as foreground
                 block_types = np.ones((self.height // self.macro_block_size, 
                                      self.width // self.macro_block_size), dtype=np.uint8)
