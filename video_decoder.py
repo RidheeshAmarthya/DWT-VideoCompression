@@ -68,13 +68,27 @@ class VideoDecoder:
                 r_block = np.clip(r_block, 0, 255).astype(np.uint8)
                 g_block = np.clip(g_block, 0, 255).astype(np.uint8)
                 b_block = np.clip(b_block, 0, 255).astype(np.uint8)
+
+                blur_window = 25
+
+                # if block_type == 0:
+                #     r_block = cv2.GaussianBlur(r_block, (blur_window, blur_window), 0)
+                #     g_block = cv2.GaussianBlur(g_block, (blur_window, blur_window), 0)
+                #     b_block = cv2.GaussianBlur(b_block, (blur_window, blur_window), 0)
                 
                 # Place blocks in frame
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 0] = r_block
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 1] = g_block
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 2] = b_block
+
+                if block_type == 0:
+                    frame[y:y + self.dct_block_size, x:x + self.dct_block_size] = cv2.GaussianBlur(frame[y:y + self.dct_block_size, x:x + self.dct_block_size], (blur_window, blur_window), 0)
                 
                 block_idx += 1
+
+        #blurred_frame = cv2.GaussianBlur(frame, (15, 15), 0)
+
+        #return blurred_frame
                 
         return frame
 
