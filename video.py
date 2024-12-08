@@ -120,13 +120,15 @@ class VideoDisplay:
         if not self.is_playing:
             return
 
-        if self.current_frame < len(self.frames):
+        if self.current_frame <= len(self.frames):
             photo = ImageTk.PhotoImage(self.frames[self.current_frame])
             
             self.panel.config(image=photo)
             self.panel.image = photo
 
-            self.current_frame += 1
+            if self.current_frame + 1 != len(self.frames):
+                self.current_frame += 1
+
 
             current_time = time.time()
             next_frame_time = self.start_time + (self.current_frame * self.frame_duration)

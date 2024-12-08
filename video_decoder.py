@@ -70,25 +70,16 @@ class VideoDecoder:
                 b_block = np.clip(b_block, 0, 255).astype(np.uint8)
 
                 blur_window = 25
-
-                # if block_type == 0:
-                #     r_block = cv2.GaussianBlur(r_block, (blur_window, blur_window), 0)
-                #     g_block = cv2.GaussianBlur(g_block, (blur_window, blur_window), 0)
-                #     b_block = cv2.GaussianBlur(b_block, (blur_window, blur_window), 0)
                 
                 # Place blocks in frame
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 0] = r_block
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 1] = g_block
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 2] = b_block
 
-                if block_type == 0:
-                    frame[y:y + self.dct_block_size, x:x + self.dct_block_size] = cv2.GaussianBlur(frame[y:y + self.dct_block_size, x:x + self.dct_block_size], (blur_window, blur_window), 0)
+                # if block_type == 0:
+                #     frame[y:y + self.dct_block_size, x:x + self.dct_block_size] = cv2.GaussianBlur(frame[y:y + self.dct_block_size, x:x + self.dct_block_size], (blur_window, blur_window), 0)
                 
                 block_idx += 1
-
-        #blurred_frame = cv2.GaussianBlur(frame, (15, 15), 0)
-
-        #return blurred_frame
                 
         return frame
 
@@ -104,6 +95,7 @@ class VideoPlayer:
         self.audio_file = None
         self.audio_stream = None
         self.audio_playback_lock = threading.Lock()
+        self.start_time = time.time()
         
     def play_audio(self, audio_path):
         try:
@@ -133,13 +125,20 @@ class VideoPlayer:
         if not self.is_playing:
             return
 
-        if self.current_frame < len(self.frames):
+        if self.current_frame <= len(self.frames):
             photo = ImageTk.PhotoImage(Image.fromarray(self.frames[self.current_frame]))
             self.panel.config(image=photo)
             self.panel.image = photo
-            self.current_frame += 1
+
+            if self.current_frame + 1 != len(self.frames):
+                self.current_frame += 1
             
-            self.root.after(int(self.frame_duration * 1000), self.update_frame)
+            
+            current_time = time.time()
+            next_frame_time = self.start_time + (self.current_frame * self.frame_duration)
+            wait_time = max(int((next_frame_time - current_time) * 1000), 1)
+
+            self.root.after(wait_time, self.update_frame)
         else:
             self.stop_playback()
 
@@ -187,6 +186,7 @@ class VideoPlayer:
         self.root.protocol("WM_DELETE_WINDOW", self.stop_playback)
         self.root.mainloop()
 
+
 def main():
     import sys
     if len(sys.argv) != 3:
@@ -207,3 +207,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
