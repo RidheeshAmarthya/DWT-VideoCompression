@@ -194,5 +194,5 @@ def main():
     encoder = VideoEncoder()
     encoder.encode_video(input_file, n1, n2)
 
-if _name_ == "_main_":
+if __name__ == "_main_":
     main()
