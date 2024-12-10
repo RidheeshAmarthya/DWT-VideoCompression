@@ -148,9 +148,11 @@ class VideoPlayer:
 
         if self.is_playing:
             self.play_pause_button.config(text="Pause")
+            self.start_time = time.time() - (self.current_frame * self.frame_duration)
             self.audio_thread = threading.Thread(target=self.play_audio, args=(audio_path,))
             self.audio_thread.start()
             self.update_frame()
+
         else:
             self.play_pause_button.config(text="Play")
 
