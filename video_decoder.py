@@ -69,15 +69,10 @@ class VideoDecoder:
                 g_block = np.clip(g_block, 0, 255).astype(np.uint8)
                 b_block = np.clip(b_block, 0, 255).astype(np.uint8)
 
-                blur_window = 25
-                
                 # Place blocks in frame
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 0] = r_block
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 1] = g_block
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 2] = b_block
-
-                # if block_type == 0:
-                #     frame[y:y + self.dct_block_size, x:x + self.dct_block_size] = cv2.GaussianBlur(frame[y:y + self.dct_block_size, x:x + self.dct_block_size], (blur_window, blur_window), 0)
                 
                 block_idx += 1
                 
@@ -125,14 +120,12 @@ class VideoPlayer:
         if not self.is_playing:
             return
 
-        if self.current_frame <= len(self.frames):
+        if self.current_frame < len(self.frames):
             photo = ImageTk.PhotoImage(Image.fromarray(self.frames[self.current_frame]))
             self.panel.config(image=photo)
             self.panel.image = photo
 
-            if self.current_frame + 1 != len(self.frames):
-                self.current_frame += 1
-            
+            self.current_frame += 1
             
             current_time = time.time()
             next_frame_time = self.start_time + (self.current_frame * self.frame_duration)
@@ -152,7 +145,6 @@ class VideoPlayer:
             self.audio_thread = threading.Thread(target=self.play_audio, args=(audio_path,))
             self.audio_thread.start()
             self.update_frame()
-
         else:
             self.play_pause_button.config(text="Play")
 
@@ -163,7 +155,16 @@ class VideoPlayer:
             self.audio_stream.close()
         if self.audio_file:
             self.audio_file.close()
-        self.root.quit()
+        self.play_pause_button.config(text="Play")
+
+    def replay(self, audio_path):
+        self.stop_playback()
+        self.current_frame = 0
+        self.audio_position = 0
+        self.audio_file = None
+        self.audio_stream = None
+        self.start_time = time.time()
+        self.toggle_play_pause(audio_path)
 
     def play_video(self, frames, audio_path):
         self.frames = frames
@@ -173,21 +174,30 @@ class VideoPlayer:
         self.panel = tk.Label(self.root)
         self.panel.pack(side="top", fill="both", expand="yes")
 
+        button_frame = tk.Frame(self.root)
+        button_frame.pack(side="bottom")
+
         self.play_pause_button = tk.Button(
-            self.root, 
+            button_frame, 
             text="Pause",
             command=lambda: self.toggle_play_pause(audio_path)
         )
-        self.play_pause_button.pack(side="bottom")
+        self.play_pause_button.pack(side="left", padx=5)
+
+        self.replay_button = tk.Button(
+            button_frame,
+            text="Replay",
+            command=lambda: self.replay(audio_path)
+        )
+        self.replay_button.pack(side="left", padx=5)
 
         self.is_playing = True
         self.audio_thread = threading.Thread(target=self.play_audio, args=(audio_path,))
         self.audio_thread.start()
 
         self.update_frame()
-        self.root.protocol("WM_DELETE_WINDOW", self.stop_playback)
+        self.root.protocol("WM_DELETE_WINDOW", self.root.quit)
         self.root.mainloop()
-
 
 def main():
     import sys
@@ -209,4 +219,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
