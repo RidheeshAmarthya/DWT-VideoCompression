@@ -119,21 +119,26 @@ class VideoPlayer:
     def update_frame(self):
         if not self.is_playing:
             return
-
+        
         if self.current_frame < len(self.frames):
             photo = ImageTk.PhotoImage(Image.fromarray(self.frames[self.current_frame]))
             self.panel.config(image=photo)
             self.panel.image = photo
-
             self.current_frame += 1
+            
+            # Check if this is the last frame
+            if self.current_frame == len(self.frames):
+                self.is_playing = False
+                self.play_pause_button.config(text="Play")
+                return
             
             current_time = time.time()
             next_frame_time = self.start_time + (self.current_frame * self.frame_duration)
             wait_time = max(int((next_frame_time - current_time) * 1000), 1)
-
             self.root.after(wait_time, self.update_frame)
         else:
             self.stop_playback()
+
 
     def toggle_play_pause(self, audio_path):
         with self.audio_playback_lock:
@@ -151,20 +156,33 @@ class VideoPlayer:
     def stop_playback(self):
         self.is_playing = False
         if self.audio_stream:
-            self.audio_stream.stop_stream()
-            self.audio_stream.close()
+            try:
+                if self.audio_stream.is_active():
+                    self.audio_stream.stop_stream()
+                self.audio_stream.close()
+            except OSError as e:
+                print(f"Error stopping audio stream: {e}")
         if self.audio_file:
-            self.audio_file.close()
+            try:
+                self.audio_file.close()
+            except Exception as e:
+                print(f"Error closing audio file: {e}")
         self.play_pause_button.config(text="Play")
 
+
+
     def replay(self, audio_path):
-        self.stop_playback()
+        if self.is_playing:
+            self.toggle_play_pause(audio_path)
+        else:
+            self.stop_playback()
         self.current_frame = 0
         self.audio_position = 0
         self.audio_file = None
         self.audio_stream = None
         self.start_time = time.time()
         self.toggle_play_pause(audio_path)
+
 
     def play_video(self, frames, audio_path):
         self.frames = frames
