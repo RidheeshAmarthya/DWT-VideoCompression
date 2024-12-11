@@ -6,6 +6,8 @@ import threading
 import wave
 import pyaudio
 import time
+import sys
+
 
 class VideoDecoder:
     def __init__(self, width=960, height=540, dct_block_size=8):
@@ -40,9 +42,10 @@ class VideoDecoder:
 
     def dequantize(self, quantized_coeffs, block_type):
         n = self.n1 if block_type == 1 else self.n2
-        quantization_matrix = np.full((8, 8), 2 ** n)
-        dequantized = (np.array(quantized_coeffs).reshape((8, 8)) * quantization_matrix).astype(np.float32)
-        return dequantized
+        quantization_matrix = (1 << n)  # Replace np.full with this scalar multiplication
+        dequantized = np.array(quantized_coeffs).reshape((8, 8)) * quantization_matrix
+        return dequantized.astype(np.float32)
+
 
     def reconstruct_frame(self, frame_blocks):
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
@@ -96,7 +99,7 @@ class VideoPlayer:
                     output=True,
                 )
 
-            chunk_size = int(44100 * self.frame_duration)
+            chunk_size = int(44100 * self.frame_duration * 2)  # Double the size
             self.audio_file.setpos(self.audio_position)
             data = self.audio_file.readframes(chunk_size)
 
@@ -113,11 +116,13 @@ class VideoPlayer:
         if not self.is_playing:
             return
         
-        if self.current_frame < len(self.frames):
+        if self.current_frame <= len(self.frames):
             photo = ImageTk.PhotoImage(Image.fromarray(self.frames[self.current_frame]))
             self.panel.config(image=photo)
             self.panel.image = photo
-            self.current_frame += 1 #gadbad
+
+            if self.current_frame + 1 != len(self.frames):
+                self.current_frame += 1 #gadbad
             
             if self.current_frame == len(self.frames):
                 self.is_playing = False
@@ -210,7 +215,9 @@ class VideoPlayer:
         self.root.mainloop()
 
 def main():
-    import sys
+    #count the time in seconds
+    start_time = time.time()
+
     if len(sys.argv) != 3:
         print("Usage: python decoder.py input_video.cmp input_audio.wav")
         return
@@ -224,6 +231,8 @@ def main():
 
     player = VideoPlayer()
     player.play_video(decoded_frames, audio_file)
+
+    print(f"Decoding took {time.time() - start_time:.2f} seconds")
 
 if __name__ == "__main__":
     main()

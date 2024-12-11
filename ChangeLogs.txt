@@ -1,8 +1,0 @@
-v0.1
-video.py
--The framerate is working correctly when using default settings, it runs at 30. 
--Video now ends after the playback is complete
--(Re)implemented default play settings -_-
-other
--Moved the commented code to Legacy-backup.py
--Step 4 complete!

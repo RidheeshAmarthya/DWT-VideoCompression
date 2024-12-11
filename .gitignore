@@ -4,3 +4,7 @@
 /test_video.py
 /WalkingStaticBackgroundn1n2104.cmp
 /motion_vectors.mp4
+*.cmp
+*.rgb
+*.wav
+*.mp4

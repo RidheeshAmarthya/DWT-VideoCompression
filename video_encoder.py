@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import cv2
 import sys
 import os
@@ -11,7 +12,6 @@ class VideoEncoder:
         self.dct_block_size = dct_block_size
         self.motion_threshold = 2.0
         self.i_frame_interval = 30
-        self.max = -1
 
     def read_raw_video_frames(self, video_path):
         frame_length = self.width * self.height * 3
@@ -33,8 +33,8 @@ class VideoEncoder:
             rgb_frame = np.stack([r, g, b], axis=-1)
             yuv_frame = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2YUV)
             
-            frames.append(rgb_frame) 
-            yuv_frames.append(yuv_frame) 
+            frames.append(rgb_frame)  # Keep RGB for compression
+            yuv_frames.append(yuv_frame)  # Keep YUV for motion estimation
 
         return frames, yuv_frames
 
@@ -73,92 +73,35 @@ class VideoEncoder:
             
         motion_vector = (center_y - y, center_x - x)
         return motion_vector, min_diff
-    
+
     def segment_frame(self, current_frame_yuv, previous_frame_yuv):
         height, width = current_frame_yuv.shape[:2]
         motion_vectors = np.zeros((height // self.macro_block_size, 
-                                width // self.macro_block_size, 2), dtype=np.float32)
+                                 width // self.macro_block_size, 2), dtype=np.float32)
         block_types = np.zeros((height // self.macro_block_size, 
-                                width // self.macro_block_size), dtype=np.uint8)
-
+                              width // self.macro_block_size), dtype=np.uint8)
+        
+        # Use Y channel for motion estimation
         current_y = current_frame_yuv[:, :, 0]
         previous_y = previous_frame_yuv[:, :, 0]
-
+        
         for y in range(0, height - self.macro_block_size + 1, self.macro_block_size):
             for x in range(0, width - self.macro_block_size + 1, self.macro_block_size):
                 current_block = current_y[y:y + self.macro_block_size, 
-                                        x:x + self.macro_block_size]
-
+                                       x:x + self.macro_block_size]
+                
+                motion_vector, _ = self.find_motion_vector(current_block, 
+                                                         previous_y, y, x)
+                
                 block_y = y // self.macro_block_size
                 block_x = x // self.macro_block_size
-
-                # Get neighboring blocks
-                neighbors = []
-                if block_y > 0: 
-                    neighbors.append(current_y[(y - self.macro_block_size):y, x:x + self.macro_block_size])
-                if block_x > 0: 
-                    neighbors.append(current_y[y:y + self.macro_block_size, (x - self.macro_block_size):x])
-                if block_y < (height // self.macro_block_size - 1):  
-                    neighbors.append(current_y[(y + self.macro_block_size):(y + 2 * self.macro_block_size), x:x + self.macro_block_size])
-                if block_x < (width // self.macro_block_size - 1): 
-                    neighbors.append(current_y[y:y + self.macro_block_size, (x + self.macro_block_size):(x + 2 * self.macro_block_size)])
-
-                similar_neighbors = 0
-                for neighbor in neighbors:
-                    if neighbor.shape == current_block.shape:
-                        gradient_current = np.gradient(current_block)
-                        gradient_neighbor = np.gradient(neighbor)
-                        gradient_diff = sum(
-                            np.abs(gc - gn).mean()
-                            for gc, gn in zip(gradient_current, gradient_neighbor)
-                        )
-                        texture_diff = abs(np.var(current_block) - np.var(neighbor))
-                        color_diff = abs(np.mean(current_block) - np.mean(neighbor))
-
-                        if gradient_diff < 5.0 and texture_diff < 10.0 and color_diff < 15.0:
-                            similar_neighbors += 1
-
-                if similar_neighbors == len(neighbors) or similar_neighbors + 1 == len(neighbors):
-                    motion_vector = (0, 0)
-                    motion_vectors[block_y, block_x] = motion_vector
-                    block_types[block_y, block_x] = 0 
-                else:
-                    motion_vector, _ = self.find_motion_vector(current_block, previous_y, y, x)
-                    motion_vectors[block_y, block_x] = motion_vector
-                    motion_magnitude = np.sqrt(motion_vector[0]**2 + motion_vector[1]**2)
-                    block_types[block_y, block_x] = 1 if motion_magnitude > self.motion_threshold else 0
-                    if motion_magnitude > self.max:
-                        self.max = motion_magnitude
-
-        return block_types, motion_vectors
-
-    # def segment_frame(self, current_frame_yuv, previous_frame_yuv):
-    #     height, width = current_frame_yuv.shape[:2]
-    #     motion_vectors = np.zeros((height // self.macro_block_size, 
-    #                             width // self.macro_block_size, 2), dtype=np.float32)
-    #     block_types = np.zeros((height // self.macro_block_size, 
-    #                             width // self.macro_block_size), dtype=np.uint8)
-        
-    #     current_y = current_frame_yuv[:, :, 0]
-    #     previous_y = previous_frame_yuv[:, :, 0]
-        
-    #     for y in range(0, height - self.macro_block_size + 1, self.macro_block_size):
-    #         for x in range(0, width - self.macro_block_size + 1, self.macro_block_size):
-    #             current_block = current_y[y:y + self.macro_block_size, 
-    #                                     x:x + self.macro_block_size]
+                motion_vectors[block_y, block_x] = motion_vector
                 
-    #             motion_vector, _ = self.find_motion_vector(current_block, 
-    #                                                     previous_y, y, x)
-                
-    #             block_y = y // self.macro_block_size
-    #             block_x = x // self.macro_block_size
-    #             motion_vectors[block_y, block_x] = motion_vector
-                
-    #             motion_magnitude = np.sqrt(motion_vector[0]**2 + motion_vector[1]**2)
-    #             block_types[block_y, block_x] = 1 if motion_magnitude > self.motion_threshold else 0
+                # Classify block based on motion magnitude
+                motion_magnitude = np.sqrt(motion_vector[0]**2 + motion_vector[1]**2)
+                block_types[block_y, block_x] = 1 if motion_magnitude > self.motion_threshold else 0
         
-    #     return block_types, motion_vectors
-
+        return block_types
 
     def dct_2d(self, block):
         return cv2.dct(block.astype(np.float32))
@@ -173,6 +116,7 @@ class VideoEncoder:
 
         for y in range(0, height - self.dct_block_size + 1, self.dct_block_size):
             for x in range(0, width - self.dct_block_size + 1, self.dct_block_size):
+                # Get corresponding macro block type
                 macro_y = min(y // self.macro_block_size, block_types.shape[0] - 1)
                 macro_x = min(x // self.macro_block_size, block_types.shape[1] - 1)
                 is_foreground = block_types[macro_y, macro_x]
@@ -204,70 +148,37 @@ class VideoEncoder:
                         f.write(' ' + ' '.join(map(str, coeffs)))
                     f.write('\n')
 
-    def display_motion_vectors_for_all_frames(self, motion_vectors_list, yuv_frames):
-        visualized_frames = []
-
-        for i, (motion_vectors, yuv_frame) in enumerate(zip(motion_vectors_list, yuv_frames)):
-            current_y = yuv_frame[:, :, 0]
-            vis_frame = cv2.cvtColor(current_y, cv2.COLOR_GRAY2BGR)
-
-            for block_y in range(motion_vectors.shape[0]):
-                for block_x in range(motion_vectors.shape[1]):
-                    y = block_y * self.macro_block_size
-                    x = block_x * self.macro_block_size
-                    dy, dx = motion_vectors[block_y, block_x]
-
-                    start_point = (x + self.macro_block_size // 2, y + self.macro_block_size // 2)
-                    end_point = (int(start_point[0] + dx), int(start_point[1] + dy))
-                    color = (0, 255, 0)  # Green
-                    cv2.arrowedLine(vis_frame, start_point, end_point, color, 1, tipLength=0.3)
-
-            visualized_frames.append(vis_frame)
-
-        output_file = "motion_vectors.mp4"
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        fps = 30 
-        out = cv2.VideoWriter(output_file, fourcc, fps, (self.width, self.height))
-
-        for frame in visualized_frames:
-            out.write(frame)
-
-        out.release()
-        print(f"Motion vectors visualization saved as {output_file}")
-
     def encode_video(self, input_file, n1, n2):
         frames, yuv_frames = self.read_raw_video_frames(input_file)
         compressed_frames = []
-        motion_vectors_list = []
 
         for i in range(len(frames)):
-            if i == 0:  
-                block_types = np.ones((self.height // self.macro_block_size,
-                                    self.width // self.macro_block_size), dtype=np.uint8)
-                motion_vectors = np.zeros((self.height // self.macro_block_size,
-                                            self.width // self.macro_block_size, 2), dtype=np.float32)
-            else:  
-                block_types, motion_vectors = self.segment_frame(yuv_frames[i], yuv_frames[i - 1])
-
-            motion_vectors_list.append(motion_vectors)
+            if i == 0 :#or i % self.i_frame_interval == 0:
+                # I-frame: all blocks treated as foreground
+                block_types = np.ones((self.height // self.macro_block_size, 
+                                     self.width // self.macro_block_size), dtype=np.uint8)
+            else:
+                # P-frame: segment based on motion
+                block_types = self.segment_frame(yuv_frames[i], yuv_frames[i-1])
 
             compressed_frame = self.compress_frame(frames[i], block_types, n1, n2)
             compressed_frames.append(compressed_frame)
 
+        # Save compressed data
         output_file = input_file.rsplit('.', 1)[0] + '.cmp'
         self.save_compressed_file(compressed_frames, n1, n2, output_file)
 
-        self.display_motion_vectors_for_all_frames(motion_vectors_list, yuv_frames)
-
-
 def main():
+    #count the time in seconds
+    start_time = time.time()
+
     if len(sys.argv) != 4:
         print("Usage: python encoder.py input_video.rgb n1 n2")
         return
 
     input_file = sys.argv[1]
-    n1 = int(sys.argv[2])
-    n2 = int(sys.argv[3]) 
+    n1 = int(sys.argv[2])  # Quantization parameter for foreground
+    n2 = int(sys.argv[3])  # Quantization parameter for background
 
     if not os.path.exists(input_file):
         print(f"Error: Input file {input_file} does not exist")
@@ -276,7 +187,9 @@ def main():
     encoder = VideoEncoder()
     encoder.encode_video(input_file, n1, n2)
     print(f"Compression complete. Output saved as {input_file.rsplit('.', 1)[0]}.cmp")
-    print(f"Max motion magnitude: {encoder.max}")
+
+    #print the time in seconds
+    print("--- %s seconds --- + Playback time" % (time.time() - start_time))
 
 if __name__ == "__main__":
     main()
