@@ -19,7 +19,6 @@ class VideoDecoder:
         current_frame = []
         
         with open(filepath, 'r') as f:
-            # Read quantization parameters
             self.n1, self.n2 = map(int, f.readline().strip().split())
             
             for line in f:
@@ -27,14 +26,12 @@ class VideoDecoder:
                 block_type = data[0]
                 coeffs = data[1:]
                 
-                # Split coefficients into RGB channels
                 r_coeffs = coeffs[0:64]
                 g_coeffs = coeffs[64:128]
                 b_coeffs = coeffs[128:192]
                 
                 current_frame.append((block_type, r_coeffs, g_coeffs, b_coeffs))
                 
-                # If we've collected all blocks for a frame
                 if len(current_frame) == (self.width // self.dct_block_size) * (self.height // self.dct_block_size):
                     frames_data.append(current_frame)
                     current_frame = []
@@ -44,7 +41,6 @@ class VideoDecoder:
     def dequantize(self, quantized_coeffs, block_type):
         n = self.n1 if block_type == 1 else self.n2
         quantization_matrix = np.full((8, 8), 2 ** n)
-        # Convert to float32 type as required by cv2.idct
         dequantized = (np.array(quantized_coeffs).reshape((8, 8)) * quantization_matrix).astype(np.float32)
         return dequantized
 
@@ -59,20 +55,17 @@ class VideoDecoder:
                     
                 block_type, r_coeffs, g_coeffs, b_coeffs = frame_blocks[block_idx]
                 
-                # Dequantize and inverse DCT for each channel
                 r_block = cv2.idct(self.dequantize(r_coeffs, block_type))
                 g_block = cv2.idct(self.dequantize(g_coeffs, block_type))
                 b_block = cv2.idct(self.dequantize(b_coeffs, block_type))
                 
-                # Clip values to valid range
                 r_block = np.clip(r_block, 0, 255).astype(np.uint8)
                 g_block = np.clip(g_block, 0, 255).astype(np.uint8)
                 b_block = np.clip(b_block, 0, 255).astype(np.uint8)
 
-                # Place blocks in frame
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 0] = r_block
                 frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 1] = g_block
-                frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 2] = b_block
+                frame[y:y + self.dct_block_size, x:x + self.dct_block_size, 2] = b_block #idhar blur lagaya tha
                 
                 block_idx += 1
                 
@@ -124,9 +117,8 @@ class VideoPlayer:
             photo = ImageTk.PhotoImage(Image.fromarray(self.frames[self.current_frame]))
             self.panel.config(image=photo)
             self.panel.image = photo
-            self.current_frame += 1
+            self.current_frame += 1 #gadbad
             
-            # Check if this is the last frame
             if self.current_frame == len(self.frames):
                 self.is_playing = False
                 self.play_pause_button.config(text="Play")
@@ -226,12 +218,10 @@ def main():
     cmp_file = sys.argv[1]
     audio_file = sys.argv[2]
 
-    # Initialize decoder and decode frames
     decoder = VideoDecoder()
     frames_data = decoder.parse_compressed_file(cmp_file)
     decoded_frames = [decoder.reconstruct_frame(frame_blocks) for frame_blocks in frames_data]
 
-    # Initialize player and play video with audio
     player = VideoPlayer()
     player.play_video(decoded_frames, audio_file)
 
