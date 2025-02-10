@@ -1,5 +1,9 @@
 # Multimedia Systems Design Project
 
+## Output
+<img src="https://github.com/RidheeshAmarthya/RidheeshAmarthya/blob/main/wallpaper.gif">
+<img src="https://github.com/RidheeshAmarthya/RidheeshAmarthya/blob/main/wallpaper.gif">
+
 ## Foreground/Background segmented compression 
 
 Developed an innovative approach to video compression by segmenting foreground and background regions using block-based motion detection techniques. Leveraged Discrete Cosine Transform (DCT) to efficiently compress video frames, applying differential compression rates to foreground (high-priority regions with significant motion) and background (static or less critical regions). This method significantly reduced bandwidth usage in video-based communication while maintaining high visual quality for dynamic content. The project demonstrated the practical integration of motion analysis and DCT-based compression in real-time applications like video conferencing and streaming.
