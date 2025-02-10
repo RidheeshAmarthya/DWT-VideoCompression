@@ -1,8 +1,8 @@
 # Multimedia Systems Design Project
 
 ## Output
-<img src="https://github.com/RidheeshAmarthya/RidheeshAmarthya/blob/main/wallpaper.gif">
-<img src="https://github.com/RidheeshAmarthya/RidheeshAmarthya/blob/main/wallpaper.gif">
+<img src="https://github.com/RidheeshAmarthya/RidheeshAmarthya/blob/main/wallpaper.gif](https://github.com/RidheeshAmarthya/portfolio-website/blob/main/assets/MM-F2.gif">
+<img src="https://github.com/RidheeshAmarthya/RidheeshAmarthya/blob/main/wallpaper.gif](https://github.com/RidheeshAmarthya/portfolio-website/blob/main/assets/MM-F.gif">
 
 ## Foreground/Background segmented compression 
 
