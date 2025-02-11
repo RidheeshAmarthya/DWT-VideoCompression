@@ -1,6 +1,6 @@
 # Multimedia Systems Design Project
 
-## Output
+## Output (Wait for it..)
 <img src="https://github.com/RidheeshAmarthya/portfolio-website/blob/main/assets/MM-F2.gif">
 <img src="https://github.com/RidheeshAmarthya/portfolio-website/blob/main/assets/MM-F.gif">
 
